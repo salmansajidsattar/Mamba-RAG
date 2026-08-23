@@ -1,0 +1,116 @@
+# RevRAG default configuration
+# Override any field via --config or argparse flags
+
+project:
+  name: "revrag"
+  seed: 42
+  output_dir: "outputs/"
+  log_dir: "logs/"
+
+data:
+  trec_dl:
+    collection_path: "data/raw/msmarco/collection.tsv"
+    queries_path: "data/raw/msmarco/queries.train.tsv"
+    qrels_path: "data/raw/msmarco/qrels.train.tsv"
+    max_doc_length: 4096       # tokens — full doc, no chunking for Mamba
+    chunk_size: 512            # for chunked-Transformer baseline only
+    chunk_overlap: 64
+  legalbench:
+    data_dir: "data/raw/legalbench_rag/"
+    datasets: ["cuad", "maud", "contractnli", "privacyqa"]
+    max_doc_length: 8192
+  synthetic:
+    source_dataset: "cuad"    # which LegalBench-RAG subset to use as source
+    num_documents: 400        # 400 × 5 = 2 000 target pairs
+    contradictions_per_doc: 5
+    output_path: "data/synthetic/cross_page_bench.jsonl"
+    validation_sample: 100    # docs manually validated
+  loco:
+    split: "test"
+    max_docs: null            # null = full test set; set integer for quick runs
+    cache_dir: "data/raw/loco_v1"
+
+  # ----------------------------------------------------------------
+  # Real benchmark datasets (no synthetic generation)
+  # ----------------------------------------------------------------
+  contractnli:
+    hf_dataset_id: "koreeda/ContractNLI"
+    split: "test"
+    # Entailment + Contradiction; skip NotMentioned (no gold span)
+    label_filter: ["Entailment", "Contradiction"]
+    min_span_length: 20       # chars; filters degenerate single-word spans
+    cache_dir: "data/raw/contractnli"
+
+  cuad_amendments:
+    hf_dataset_id: "theatticusproject/cuad"
+    split: "test"
+    # Categories with genuine amendment/revision relationships
+    categories:
+      - "Amendment Exception"
+      - "Renewal Term"
+      - "Expiration Date"
+      - "Anti-Assignment"
+      - "Termination For Convenience"
+      - "Notice Period To Terminate Renewal"
+    min_char_gap: 500         # min char offset gap between gold and decoy spans
+    cache_dir: "data/raw/cuad"
+
+  multihop_rag:
+    hf_dataset_id: "yixuantt/MultiHopRAG"
+    max_queries: 500          # full set ~2500; 500 for faster Kaggle runs
+    neg_ratio: 50             # negative passages per query for corpus
+    question_types: null      # null = all types
+    cache_dir: "data/raw/multihop_rag"
+
+retrieval:
+  top_k: 20                   # candidates retrieved before reranking
+  final_k: 5                  # passages returned after reranking
+  index_type: "flat"          # "flat" or "ivf" for large corpora
+  batch_size: 64
+
+model:
+  mamba2:
+    checkpoint: "state-spaces/mamba2-130m"   # swap for larger on cluster
+    hidden_size: 768
+    max_length: 8192
+    pooling: "mean"           # mean-pool hidden states for bi-encoder
+  bge:
+    checkpoint: "BAAI/bge-large-en-v1.5"
+    max_length: 512
+  bgem3:
+    checkpoint: "BAAI/bge-m3"
+    max_length: 8192          # native; no chunking needed
+  consistency_verifier:
+    checkpoint: "cross-encoder/nli-deberta-v3-small"  # NLI cross-encoder
+    nli_contradiction_threshold: 0.5
+    page_order_weight: 0.3    # weight given to document-order rule
+
+training:
+  epochs: 3
+  batch_size: 32
+  learning_rate: 2.0e-5
+  warmup_steps: 500
+  weight_decay: 0.01
+  in_batch_negatives: true
+  hard_negatives_per_query: 7
+  gradient_accumulation_steps: 4
+  fp16: true
+  save_steps: 500
+  eval_steps: 500
+
+evaluation:
+  metrics: ["recall@1", "recall@5", "recall@10", "recall@20", "ndcg@10", "mrr", "cra@1", "ecs", "revision_recall"]
+  seeds: [42, 123, 456]       # 3 seeds for mean ± std reporting
+  significance_test: "paired_ttest"
+
+efficiency:
+  doc_length_buckets: [512, 1024, 2048, 4096, 8192]
+  warmup_runs: 3
+  timed_runs: 10
+
+langfuse:
+  enabled: true
+  public_key: "${LANGFUSE_PUBLIC_KEY}"
+  secret_key: "${LANGFUSE_SECRET_KEY}"
+  host: "https://cloud.langfuse.com"
+  trace_name: "revrag_retrieval"
