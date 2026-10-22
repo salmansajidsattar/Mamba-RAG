@@ -1,8 +1,8 @@
-# RevRAG (MambaRAG)
+# MambaRAG
 
 Revision-aware retrieval for long, multi-page documents.
 
-RevRAG reads a full document with a Mamba-2 encoder (no chunking), then checks the top results for contradictions across pages. When two passages disagree, the later page wins. This helps with contracts where an amendment on page 22 overrides a clause on page 4.
+MambaRAG (the method is called RevRAG in the code and paper) reads a full document with a Mamba-2 encoder (no chunking), then checks the top results for contradictions across pages. When two passages disagree, the later page wins. This helps with contracts where an amendment on page 22 overrides a clause on page 4.
 
 ## The problem
 
