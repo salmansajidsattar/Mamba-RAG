@@ -150,18 +150,18 @@ Uses a free local model, no API key. Pick one in `config.py`: `phi3` (default), 
 
 ## Status
 
-Code is complete. Final benchmark numbers are not in this repo yet. The paper in `paper/` still has placeholders for results.
+This project is under active experiments. Code and results can change. Final benchmark numbers are not available yet.
 
 ## Citation
 
 ```bibtex
 @inproceedings{revrag2026,
   title  = {RevRAG: Linear-Time Long-Context Retrieval with Intra-Document Cross-Page Consistency Verification},
-  author = {Sattar, Salman Sajid},
+  author = {Salman Sajid},
   year   = {2026}
 }
 ```
 
 ## Contact
 
-Salman Sajid Sattar, salmansajidsattar@gmail.com
+Salman Sajid, salmansajidsattar@gmail.com
